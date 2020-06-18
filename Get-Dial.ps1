@@ -1,4 +1,9 @@
-﻿[CmdletBinding()]
+<#
+TEXT ME – A POWERSHELL DIALER CHALLENGE
+https://ironscripter.us/text-me-a-powershell-dialer-challenge/
+#>
+
+[CmdletBinding()]
 param (
     [Parameter(
         ValueFromPipeline = $true,
