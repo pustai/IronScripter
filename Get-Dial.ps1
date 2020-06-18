@@ -5,15 +5,16 @@ https://ironscripter.us/text-me-a-powershell-dialer-challenge/
 
 [CmdletBinding()]
 param (
+
     [Parameter(
         ValueFromPipeline = $true,
         HelpMessage = 'Enter a text to convert'
-    )]
+    )]# end:[Parameter(
     [ValidateLength(1, 5)]
     [string]
     $String
 
-)
+) # end: param (
 
 $Dialer = @{
     2 = 'a', 'b', 'c'
@@ -24,7 +25,7 @@ $Dialer = @{
     7 = 'p', 'q', 'r', 's'
     8 = 't', 'u', 'v'
     9 = 'w', 'x', 'y', 'z'
-}
+} # end:$Dialer = @{
 
 function Get-NumericToText() {
 
@@ -35,7 +36,7 @@ function Get-NumericToText() {
     } #end: foreach ($digit in ($String -split '')) {
     Write-Output ($Text -join '')
 
-}
+} # end: function Get-NumericToText() {
 
 function Get-TextToNumeric() {
 
@@ -43,14 +44,14 @@ function Get-TextToNumeric() {
 
         [string[]]$numeric += ($Dialer.GetEnumerator() | Where-Object { $_.Value -eq $letter }).Name
 
-    }
+    }# end: foreach ($letter in ($String -split '')) {
     Write-Output ($numeric -join '')
 
-}
+} # end: function Get-TextToNumeric() {
 
 if ($String -match "\d") {
     Get-NumericToText
-}
+} # end: if ($String -match "\d") {
 Else {
     Get-TextToNumeric
-}
+} # end: Else {
