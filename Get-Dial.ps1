@@ -34,9 +34,9 @@ function Get-NumericToText() {
 
 function Get-TextToNumeric() {
 
-    foreach ($leter in ($String -split '')) {
+    foreach ($letter in ($String -split '')) {
 
-        [string[]]$numeric += ($Dialer.GetEnumerator() | Where-Object { $_.Value -eq $leter }).Name
+        [string[]]$numeric += ($Dialer.GetEnumerator() | Where-Object { $_.Value -eq $letter }).Name
 
     }
     Write-Output ($numeric -join '')
