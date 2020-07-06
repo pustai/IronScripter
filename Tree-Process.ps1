@@ -1,20 +1,40 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param (
     [Parameter()]
     [string]
     $ComputerName = $env:ComputerName
 )
 
+# Verify if administrator
+$currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+if ($currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    Write-Verbose 'Running with elevations rigths'
+    $isAdministrator = $true
+}# end:if ($currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+else {
+    $isAdministrator = $false
+    Write-Verbose 'Running without elevations rigths'
+    Write-Verbose 'Won´t show username information'
+} # end: else {
+
 # Funtion return ProcessName and idChain to format output
 # idChain is a trace from the process to its top parent
 function Get-Chain() {
-    $AllProcess = Get-WmiObject win32_process -ComputerName $ComputerName | Select-Object Name, ProcessID, ParentProcessID,
-    @{Name = 'Age'; expression = { ((Get-date) - (Get-Date ($_.ConvertToDateTime($_.CreationDate)))) } }
-
+    Write-Verbose 'Obtaining process list'
+    $AllProcess = Get-CimInstance -ClassName win32_process -ComputerName $ComputerName | Select-Object Name, ProcessID, ParentProcessID,
+    @{Name = 'Age'; expression = { ((Get-date) - (Get-Date $_.CreationDate)) } }
+    Write-Verbose "$($allProcess.Count) process were found"
+    Write-Verbose "ProcessName: idChain"
     foreach ($process in $AllProcess) {
 
         $idChain = new-object 'System.Collections.Generic.List[int]'
         $auxProcess = $process
+        if ($isAdministrator) {
+            $userName = (Get-Process -IncludeUserName -id $process.ProcessID).UserName
+        } # end: if ($isAdministrator) {
+        else {
+            $userName = '?'
+        } # end: else {
 
         $continue = $true
         do {
@@ -24,14 +44,16 @@ function Get-Chain() {
             if (!$auxProcess) {
                 $idchain.Add($process.ProcessID)
                 $property = @{
-                    Name      = $process.Name
-                    idChain   = $idChain
-                    ProcessID = $process.ProcessID
-                    Age       = $process.Age
+                    Name        = $process.Name
+                    idChain     = $idChain
+                    ProcessID   = $process.ProcessID
+                    Age         = $process.Age
+                    UserName    = $userName
                 } # end: $property = @{
                 $obj = New-Object -TypeName PSObject -Property $property
                 Write-Output $obj
                 $continue = $false
+                Write-Verbose "$($process.Name): $($idChain)"
             } # end: if (!$auxProcess) {
 
             # build an idChain.
@@ -54,11 +76,13 @@ function Get-Chain() {
 $Process = Get-Chain
 
 # Format Output
+Write-Verbose 'Formatting output..'
 # Add the topmost level as computer name.
 $property = [ordered]@{
-    ProcessID = $null
-    Age       = $null
-    Tree      = "+-$ComputerName"
+    ProcessID   = $null
+    Age         = $null
+    UserName    = $null
+    Tree        = "+-$ComputerName"
 } # end: $property = @{
 $obj = New-Object -TypeName PSObject -Property $property
 Write-Output $obj
@@ -67,15 +91,15 @@ Write-Output $obj
 $Process | Sort-Object idchain | ForEach-Object {
 
     # prepare identation with tab (`t)
-    $start = "|`t " * ($_.idchain.count - 1)
+    $start = "|`t" * ($_.idchain.count - 1)
 
     $property = [ordered]@{
         ProcessID = $_.ProcessID
-        Age    = $_.Age
+        Age       = $_.Age
+        UserName  = $_.UserName
         Tree      = ("{0}+-{1}" -f $start, $_.Name)
     } # end: $property = @{
     $obj = New-Object -TypeName PSObject -Property $property
     Write-Output $obj
 
 } # end: Get-Chain | Sort-Object idchain | ForEach-Object {
-
